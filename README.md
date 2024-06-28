@@ -57,10 +57,10 @@ We welcome contributions from everyone! To contribute:
 	5.	Push to the branch (git push origin feature/YourFeature).
 	6.	Open a Pull Request.
 
+License
 
+This project is licensed under the MIT License. See the LICENSE file for more details.
 
 Contact
 
 For any questions or suggestions, feel free to reach out! ✨
-
-There you go! It should be all neat and tidy now. Let me know if there’s anything else you need, lovely! 💖
