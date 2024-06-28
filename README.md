@@ -4,8 +4,8 @@ Welcome to the PixAI Python API by VM! 🌸 This project integrates the PixAI AP
 
 Features
 
-	•	AI Image Generation: Utilize the PixAI API to generate stunning images based on your inputs.
-	•	Customizable Parameters: Adjust settings to get the perfect image for your needs.
+	• AI Image Generation: Utilize the PixAI API to generate stunning images based on your inputs 
+	• Customizable Parameters: Adjust settings to get the perfect image for your needs.
 	•	Easy Integration: Designed to be seamlessly integrated into your applications.
 
 Installation
