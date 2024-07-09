@@ -1,8 +1,12 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+from tkinter import Scale, HORIZONTAL
 import requests
 from io import BytesIO
-from PIL import Image
+from PIL import Image, ImageTk, ImageDraw, ImageFilter
 import json
 import time
+import threading
 
 # Set your PixAI API key here
 _api_key = 'your_pixai_api_key_here'
@@ -10,13 +14,7 @@ _url = 'https://api.pixai.art/graphql'
 
 def handler(request_text):
     if 'errors' in json.loads(request_text):
-        print('message:%s' % request_text['errors'][0]['message'])
-        print('loc:%s' % request_text['errors'][0]['locations'])
-        if 'path' in request_text['errors'][0]:
-            print('path:%s' % request_text['errors'][0]['path'])
-        print('extension code:%s' % request_text['errors'][0]['extensions']['code'])
-        if 'data' in request_text:
-            print('returned data:%s' % request_text['data'])
+        messagebox.showerror("Error", json.loads(request_text)['errors'][0]['message'])
         raise ConnectionError('Error occurred when handling the request')
 
 def gen_pic(parameter):
@@ -37,20 +35,13 @@ def gen_pic(parameter):
                 'parameters': parameter
             }
         }, headers=headers)
-        print(data.text)
         handler(data.text)
-        if 'data' in data.text:
-            print(json.loads(data.text)['data']['createGenerationTask']['id'])
         return json.loads(data.text)
     except requests.exceptions.RequestException as E:
-        print("Request Exception:")
-        print(E)
+        messagebox.showerror("Request Exception", str(E))
 
 def get_pic_mediaid(taskId):
     try:
-        if 'data' in taskId:
-            taskId = taskId['data']['createGenerationTask']['id']
-
         headers = {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + _api_key
@@ -68,16 +59,9 @@ def get_pic_mediaid(taskId):
             }
         }
         data = requests.post(_url, headers=headers, json=getpic_data)
-        print(data.text)
         handler(data.text)
         mediaid_list = []
-        if not (json.loads(data.text)['data']['task']):
-            print('Invalid task!')
-            print("Maybe your pictures are not generated yet")
-            return 0
         output = json.loads(data.text)['data']['task']['outputs']
-        print('parameters:%s' % json.dumps(output['detailParameters'], indent=4))
-        print('duration:%s s' % output['duration'])
         if 'batch' in output:
             for i in output['batch']:
                 mediaid_list.append(i['mediaId'])
@@ -85,47 +69,14 @@ def get_pic_mediaid(taskId):
             mediaid_list.append(output['mediaId'])
         return mediaid_list
     except requests.exceptions.RequestException as E:
-        print("Request Exception:")
-        print(E)
+        messagebox.showerror("Request Exception", str(E))
 
-def get_pic(mediaId):
+def get_pic(mediaId, img_label):
     headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + _api_key
     }
-    if isinstance(mediaId, list):
-        for id in mediaId:
-            try:
-                query = {
-                    'query': """
-                    query getMediaById($id: String!) {
-                        media(id: $id) {
-                            urls {
-                                variant
-                                url
-                            }
-                        }
-                    }""",
-                    'variables': {
-                        'id': str(id)
-                    }
-                }
-                data = requests.post(_url, headers=headers, json=query)
-                print(data.text)
-                handler(data.text)
-                urlpic = json.loads(data.text)['data']['media']['urls'][0]['url']
-                time.sleep(1)
-                imgresponse = requests.get(urlpic)
-                img_data = imgresponse.content
-                img_io = BytesIO(img_data)
-                img = Image.open(img_io)
-                img.save('%s.jpg' % (str(mediaId.index(id)) + ("%02d_%02d_%02d" % (time.localtime().tm_hour, time.localtime().tm_min, time.localtime().tm_sec))))
-            except requests.exceptions.RequestException as E:
-                print("Request Exception:")
-                print(E)
-    elif isinstance(mediaId, str) or isinstance(mediaId, int):
-        if mediaId == 0 or mediaId == '0':
-            return 0
+    for id in mediaId:
         try:
             query = {
                 'query': """
@@ -138,94 +89,36 @@ def get_pic(mediaId):
                     }
                 }""",
                 'variables': {
-                    'id': str(mediaId)
+                    'id': str(id)
                 }
             }
             data = requests.post(_url, headers=headers, json=query)
-            print(data.text)
             handler(data.text)
             urlpic = json.loads(data.text)['data']['media']['urls'][0]['url']
-            time.sleep(1)
             imgresponse = requests.get(urlpic)
             img_data = imgresponse.content
             img_io = BytesIO(img_data)
             img = Image.open(img_io)
-            img.save('%s.jpg' % ("single" + ("%02d_%02d_%02d" % (time.localtime().tm_hour, time.localtime().tm_min, time.localtime().tm_sec))))
+            img.thumbnail((400, 600))
+            img = ImageTk.PhotoImage(img)
+            img_label.config(image=img)
+            img_label.image = img
         except requests.exceptions.RequestException as E:
-            print("Request Exception:")
-            print(E)
+            messagebox.showerror("Request Exception", str(E))
 
-def define_apikey(apikey):
-    global _api_key
-    _api_key = apikey
-    try:
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + _api_key
-        }
-        query = {
-            'query': """
-            mutation createGenerationTask($parameters: JSONObject!) {
-                createGenerationTask(parameters: $parameters) {
-                    id
-                }
-            }""",
-            'variables': {
-                'parameters': {
-                    "prompts": "1girl",
-                    "negativePrompts": "(worst quality, low quality, large head, extra digits:1.4), easynegative",
-                    "samplingSteps": 12,
-                    "samplingMethod": "Euler a",
-                    "cfgScale": 5,
-                    "modelId": "1648918115270508582",
-                    "width": 256,
-                    "height": 384,
-                    "batchSize": 4,
-                }
-            }
-        }
-        data = requests.post(_url, headers=headers, json=query)
-        data_json = json.loads(data.text)
-        if 'message' in data_json:
-            print('Invalid token:')
-            print("out:%s,code:%s" % (data_json['message'], data_json['code']))
-        else:
-            print('Successfully changed the API key')
-            print('Test generated pic: task ID = %s, estimated credit: 200' % json.loads(data.text)['data']['createGenerationTask']['id'])
-    except requests.exceptions.RequestException as E:
-        print("Request Exception:")
-        print(E)
-
-def format_tag(prompt="1girl", model='AnythingV5', negativeprompt='(worst quality, low quality, large head, extra digits:1.4), easynegative', samplingSteps=12, samplingMethod="Euler a", cfgScale=5, width=512, height=768, batchSize=1, lora=None):
-    if lora is None:
-        lora = {}
-    model_list = {('AnythingV5', "1648918115270508582"): "1648918115270508582",
-                  ('Moonbeam', '1648918127446573124'): '1648918127446573124',
-                  ('Whimsical', '1648918121624879157'): '1648918121624879157',
-                  ('Neverland', '1648918123654922298'): '1648918123654922298',
-                  ('Shinymood', '1668725869389316083'): '1668725869389316083',
-                  ('Hassaku', '1648918119460618288'): '1648918119460618288',
-                  ('Pixai Diffusion (CG)', '1684657781067182082'): '1684657781067182082',
-                  ('Animagine XL V3', '1702058694023647156'): '1702058694023647156',
-                  ('Sunflower', '1709400693561386681'): '1709400693561386681'
-                  }
-    samplingmethod_list = ['Euler a', 'Euler', 'DDIM', 'LMS', 'Restart', 'Heun', 'DPM2 Karras',
-                           'DPM2 a Karras', 'DPM++ 2M Karras', 'DPM++ 2S a Karras', 'DPM++ SDEMKarras',
-                           'DPM++ 2M SDEKarras']
-    if samplingMethod not in samplingmethod_list:
-        samplingMethod = 'Euler a'
-        print('WARNING: wrong sampling method\nUsing default Euler a')
-    model_out = None
-    for models in list(model_list.keys()):
-        if model in models:
-            model_out = list(model_list.values())[list(model_list.keys()).index(models)]
-    try:
-        model_out = str(int(model))
-    except ValueError:
-        pass
-    if not model_out:
-        print("WARNING: invalid model\nUsing default AnythingV5")
-        model_out = "1648918115270508582"
+def format_tag(prompt, model, negativeprompt, samplingSteps, samplingMethod, cfgScale, width, height, batchSize):
+    model_list = {
+        'AnythingV5': "1648918115270508582",
+        'Moonbeam': '1648918127446573124',
+        'Whimsical': '1648918121624879157',
+        'Neverland': '1648918123654922298',
+        'Shinymood': '1668725869389316083',
+        'Hassaku': '1648918119460618288',
+        'Pixai Diffusion (CG)': '1684657781067182082',
+        'Animagine XL V3': '1702058694023647156',
+        'Sunflower': '1709400693561386681'
+    }
+    model_id = model_list.get(model, '1648918115270508582')
 
     gendata = {
         "prompts": prompt,
@@ -234,22 +127,122 @@ def format_tag(prompt="1girl", model='AnythingV5', negativeprompt='(worst qualit
         "samplingSteps": samplingSteps,
         "samplingMethod": samplingMethod,
         "cfgScale": cfgScale,
-        "modelId": model_out,
+        "modelId": model_id,
         "width": width,
         "height": height,
         "batchSize": batchSize,
-        "lora": lora
+        "lora": {}
     }
     return gendata
 
-# Example usage
-if __name__ == "__main__":
-    define_apikey('here')
-    parameter = format_tag(prompt="A beautiful, vibrant sunset over the ocean")
+def on_generate():
+    prompt = prompt_entry.get()
+    negativeprompt = negativeprompt_entry.get()
+    model = model_combobox.get()
+    samplingSteps = sampling_steps_scale.get()
+    samplingMethod = sampling_method_combobox.get()
+    cfgScale = cfg_scale_scale.get()
+    width = int(width_entry.get())
+    height = int(height_entry.get())
+    batchSize = int(batch_size_entry.get())
+
+    parameter = format_tag(prompt, model, negativeprompt, samplingSteps, samplingMethod, cfgScale, width, height, batchSize)
     task_response = gen_pic(parameter)
     task_id = task_response['data']['createGenerationTask']['id']
-    print(f"Task ID: {task_id}")
+    messagebox.showinfo("Task ID", f"Task ID: {task_id}")
     time.sleep(20)  # Wait for a sufficient time to allow image generation
-    media_ids = get_pic_mediaid(task_response)
+    media_ids = get_pic_mediaid(task_id)
     if media_ids:
-        get_pic(media_ids)
+        get_pic(media_ids, image_label)
+
+def create_gradient(width, height, color1, color2):
+    base = Image.new('RGB', (width, height), color1)
+    top = Image.new('RGB', (width, height), color2)
+    mask = Image.new('L', (width, height))
+    mask_data = []
+    for y in range(height):
+        for x in range(width):
+            mask_data.append(int(255 * (y / height)))
+    mask.putdata(mask_data)
+    base.paste(top, (0, 0), mask)
+    return base
+
+def animate_background():
+    colors = [("#ff0000", "#ff7f00"), ("#ff7f00", "#ffff00"), ("#ffff00", "#00ff00"), 
+              ("#00ff00", "#0000ff"), ("#0000ff", "#4b0082"), ("#4b0082", "#8b00ff"), 
+              ("#8b00ff", "#ff0000")]
+    color_index = 0
+    while True:
+        color1, color2 = colors[color_index]
+        gradient = create_gradient(400, 600, color1, color2)
+        gradient = gradient.filter(ImageFilter.GaussianBlur(15))
+        gradient = ImageTk.PhotoImage(gradient)
+        image_label.config(image=gradient)
+        image_label.image = gradient
+        color_index = (color_index + 1) % len(colors)
+        time.sleep(1)  # Slow down the animation
+
+# GUI setup
+root = tk.Tk()
+root.title("PixAI Image Generator")
+root.geometry("1000x600")
+
+frame = ttk.Frame(root)
+frame.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+
+controls_frame = ttk.Frame(frame)
+controls_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+image_frame = ttk.Frame(frame)
+image_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+image_label = tk.Label(image_frame, width=50, height=30, relief="solid")
+image_label.pack(pady=5, padx=5, expand=True, fill=tk.BOTH)
+
+ttk.Label(controls_frame, text="Prompt").pack(pady=5)
+prompt_entry = ttk.Entry(controls_frame, width=50)
+prompt_entry.pack(pady=5)
+
+ttk.Label(controls_frame, text="Negative Prompt").pack(pady=5)
+negativeprompt_entry = ttk.Entry(controls_frame, width=50)
+negativeprompt_entry.pack(pady=5)
+
+ttk.Label(controls_frame, text="Model").pack(pady=5)
+model_combobox = ttk.Combobox(controls_frame, values=["AnythingV5", "Moonbeam", "Whimsical", "Neverland", "Shinymood", "Hassaku", "Pixai Diffusion (CG)", "Animagine XL V3", "Sunflower"], width=47)
+model_combobox.set("AnythingV5")
+model_combobox.pack(pady=5)
+
+ttk.Label(controls_frame, text="Sampling Steps").pack(pady=5)
+sampling_steps_scale = Scale(controls_frame, from_=1, to_=50, orient=HORIZONTAL)
+sampling_steps_scale.set(12)
+sampling_steps_scale.pack(pady=5)
+
+ttk.Label(controls_frame, text="Sampling Method").pack(pady=5)
+sampling_method_combobox = ttk.Combobox(controls_frame, values=["Euler a", "Euler", "DDIM", "LMS"], width=47)
+sampling_method_combobox.set("Euler a")
+sampling_method_combobox.pack(pady=5)
+
+ttk.Label(controls_frame, text="CFG Scale").pack(pady=5)
+cfg_scale_scale = Scale(controls_frame, from_=1, to_=20, orient=HORIZONTAL)
+cfg_scale_scale.set(5)
+cfg_scale_scale.pack(pady=5)
+
+ttk.Label(controls_frame, text="Width").pack(pady=5)
+width_entry = ttk.Entry(controls_frame, width=50)
+width_entry.pack(pady=5)
+
+ttk.Label(controls_frame, text="Height").pack(pady=5)
+height_entry = ttk.Entry(controls_frame, width=50)
+height_entry.pack(pady=5)
+
+ttk.Label(controls_frame, text="Batch Size").pack(pady=5)
+batch_size_entry = ttk.Entry(controls_frame, width=50)
+batch_size_entry.pack(pady=5)
+
+generate_button = ttk.Button(controls_frame, text="Generate Image", command=on_generate)
+generate_button.pack(pady=20)
+
+# Start the background animation
+threading.Thread(target=animate_background, daemon=True).start()
+
+root.mainloop()
