@@ -61,5 +61,3 @@ This project is licensed under the [MIT License](LICENSE).
 ---
 
 Thank you for your interest in Pixai-Python-API app.
-
-```
