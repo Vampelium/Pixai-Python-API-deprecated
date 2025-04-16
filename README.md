@@ -1,66 +1,65 @@
-PixAI Python API by VM
+# Pixai-Python-API (Deprecated)
 
-Welcome to the PixAI Python API by VM! 🌸 This project integrates the PixAI API to create a fabulous AI image application. It’s still a work in progress, with a few bugs here and there, but we’ll be adding more features as we get more details and access to other functionalities. Stay tuned for updates! 🌟
+> **⚠️ This project is deprecated and no longer maintained. A new version of the API is currently in development to accommodate changes to the Pixai API.**
 
-Features
+---
 
-	•	AI Image Generation: Utilize the PixAI API to generate stunning images based on your inputs.
-	•	Customizable Parameters: Adjust settings to get the perfect image for your needs.
-	•	Easy Integration: Designed to be seamlessly integrated into your applications.
+Pixai-Python-API was a Python app designed to interact with the Pixai platform, allowing users to generate AI-powered images programmatically. Due to recent updates and changes in the Pixai API, this app is no longer functional and has been officially deprecated.
 
-Installation
+## 🚨 Important Notice
 
-To get started with PixAI Python API by VM, you need to have Python installed. Then, follow these steps:
+This app is **no longer supported** and **should not be used** for any new projects. The Pixai API has undergone significant changes, and a new Python app is being developed to reflect these updates. Stay tuned for updates on the new library.
 
-	1.	Clone the repository:
+## Features (Deprecated)
 
-git clone https://github.com/vampelium/pixai-python-api-by-vm.git
+- Easy integration with the Pixai platform.
+- Generate AI-based images directly from app.
+- Parameters for customizing image generation (e.g., resolution, styles, etc.).
 
+## Deprecation Details
 
-	2.	Navigate to the project directory:
+- **Last Supported Version:** `v1`
+- **Deprecation Date:** 2/12/25
+- **New API app:** Currently under development.
 
-cd pixai-python-api-by-vm
+## What to do next?
 
+If you are currently using this app, we recommend the following steps:
 
-	3.	Install the required packages:
+1. **Stop Using This App:**
+   - The Pixai API has changed, and this app will no longer work.
+2. **Prepare for Migration:**
+   - Keep an eye on this repository about the new Python API app.
+3. **Provide Feedback:**
+   - If you have suggestions or requirements for the new app, feel free to share your feedback.
 
-pip install -r requirements.txt
+## Getting Started (For Archival Purposes Only)
 
+While this app is no longer functional, here is how it was previously used:
 
+### Installation
 
-Usage
+```
+download the repo
+```
 
-Here’s a quick guide to using the PixAI Python API by VM:
+## Future Plans
 
-	1.	Import the API and set your PixAI API key.
-	2.	Generate an Image by defining the parameters and creating a generation task.
-	3.	Retrieve the Image using the task ID and media ID.
+The new Pixai Python API app will include:
+- Updated methods to align with the latest Pixai API.
+- Enhanced performance and new features.
+- Simplified integration and better documentation.
 
-Current Bugs
+## Contributing
 
-	•	There are a few known issues that we’re working on fixing. If you encounter any bugs, please report them on the Issues page.
+Since this project is deprecated, contributions are no longer accepted. However, we encourage users to participate in the development of the new API app when it becomes available.
 
-Upcoming Features
+## License
 
-	•	Enhanced Error Handling: To make the API more robust and user-friendly.
-	•	Additional Image Parameters: More customization options for image generation.
-	•	Extended Documentation: Detailed guides and tutorials.
+This project is licensed under the [MIT License](LICENSE).
 
-Contributing
+---
 
-We welcome contributions from everyone! To contribute:
+Thank you for your interest in Pixai-Python-API app.
 
-	1.	Fork the repository.
-	2.	Create a new branch (git checkout -b feature/YourFeature).
-	3.	Make your changes.
-	4.	Commit your changes (git commit -m 'Add some feature').
-	5.	Push to the branch (git push origin feature/YourFeature).
-	6.	Open a Pull Request.
-
-License
-
-This project is licensed under the MIT License. See the LICENSE file for more details.
-
-Contact
-
-For any questions or suggestions, feel free to reach out! ✨
+```
